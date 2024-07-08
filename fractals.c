@@ -5,22 +5,23 @@
 #include <SDL2/SDL.h>
 
 #include "state.h"
+#include "fractal_functions.h"
 
 #define SDL_ASSERT(x) assert(x == 0);
-#define MAX_ITERS 20
 #define RE_START -2.0f
 #define RE_END 2.0f
 #define IM_START -2.0f
 #define IM_END 2.0f
 
-// A pixelFunc takes an x and y values, and sets the
-// relevant pixel. It returns 0 on success.
+
+// A pixelFunc takes in x and y values, the width and height of the window,
+// and sets the relevant pixel based on the iterations. It returns 0 on success.
 // The x and y coordinates are counted from the top left.
-typedef int (*pixelSetter) (int x, int y, int width, int height, SDL_Renderer* r);
-static int grayscaleMandlebrot(int x, int y, int width, int height, SDL_Renderer* r);
+typedef int (*pixelSetter) (int x, int y, int width, int height, SDL_Renderer* r, state* state);
+static int grayscale(int x, int y, int width, int height, SDL_Renderer* r, state* state);
 
 // drawPixels iterates through all the pixels on the screen and draws them.
-static int drawPixels(SDL_Renderer* r, SDL_Window* w, pixelSetter ps);
+static int drawPixels(SDL_Renderer* r, SDL_Window* w, pixelSetter ps, state* state);
 
 void initialiseSDL(SDL_Window** window, SDL_Renderer** renderer, state** state) {
     // Initialises the SDL library.
@@ -48,7 +49,7 @@ int main(void) {
      * PARSE COMMAND LINE ARGUMENTS
      */
 
-    pixelSetter setter = &grayscaleMandlebrot;
+    pixelSetter setter = &grayscale;
 
     /*
      *  INITIALISE AND RUN SDL
@@ -64,7 +65,7 @@ int main(void) {
             SDL_ASSERT(SDL_RenderClear(renderer));
 
             // Draw fractal pixels.
-            SDL_ASSERT(drawPixels(renderer, window, setter));
+            SDL_ASSERT(drawPixels(renderer, window, setter, state));
 
             // Update the screen.
             SDL_RenderPresent(renderer);
@@ -76,23 +77,34 @@ int main(void) {
     return EXIT_SUCCESS;
 }
 
-static int mandlebrotIters(double x, double y) {
-    double complex c = x + (y * I);
-    double complex z = 0;
-    int n = 0;
-    while (cabs(z) < 2 && n < MAX_ITERS) {
-        z = cpow(z, 2) + c;
-        n++;
+// Takes pixel coordinates x and y and a state,
+// returns the iterations for divergence of the complex
+// number represented by that pixel.
+static int getIters(int x, int y, int width, int height, state* state) {
+    double complex z = RE_START + (((float) x / (float) width) * (RE_END - RE_START))
+                + (I * (IM_START + (((float) y / (float) height) * (IM_END - IM_START))));
+    switch (state->fractalType) {
+        case TYPE_MANDELBROT:
+            return mandelbrotIters(z);
+            break;
+        case TYPE_JULIA:
+            return juliaIters(
+                state->fractalArgs.julia.P,
+                z,
+                state->fractalArgs.julia.c
+            );
+            break;
+        default:
+            fprintf(stderr, "Unknown fractal type %d.\n", state->fractalType);
+            return -1;
+            break;
     }
-    return n;
 }
 
-int grayscaleMandlebrot(int x, int y, int width, int height, SDL_Renderer* r) {
-    double xmandle = RE_START + (((float) x / (float) width) * (RE_END - RE_START));
-    double ymandle = IM_START + (((float) y / (float) height) * (IM_END - IM_START));
-    int iters = mandlebrotIters(xmandle, ymandle);
+int grayscale(int x, int y, int width, int height, SDL_Renderer* r, state* state) {
+    int iters = getIters(x, y, width, height, state);
     int c;
-    if (iters == MAX_ITERS) {
+    if (iters == -1) {
         c = 0;
     } else {
         c = 255 * ((float) iters / (float) MAX_ITERS);
@@ -106,13 +118,13 @@ int grayscaleMandlebrot(int x, int y, int width, int height, SDL_Renderer* r) {
     return -1;
 }
 
-int drawPixels(SDL_Renderer* r, SDL_Window* w, pixelSetter ps) {
+int drawPixels(SDL_Renderer* r, SDL_Window* w, pixelSetter ps, state* state) {
     int width;
     int height;
     SDL_GetWindowSize(w, &width, &height);
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            if (ps(x, y, width, height, r) != 0) return -1;
+            if (ps(x, y, width, height, r, state) != 0) return -1;
         }
     }
     return 0;

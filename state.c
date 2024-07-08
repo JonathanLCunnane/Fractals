@@ -9,6 +9,7 @@ state* initState(SDL_Window* w, SDL_Renderer* r) {
     state* state = malloc(sizeof(state));
     assert(state != NULL);
 
+    state->fractalType = TYPE_MANDELBROT;
     state->redrawRequired = true;
     state->isRunning = true;
     state->window = w;

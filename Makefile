@@ -1,7 +1,7 @@
 CC 		?= gcc
 CFLAGS 	?= -Wall -Wextra -pedantic -std=c11 -g
 TARGET = fractals
-SRCS = fractals.c state.c
+SRCS = fractal_functions.c fractals.c state.c
 LIBS = -lm
 
 # SDL2 configuration
