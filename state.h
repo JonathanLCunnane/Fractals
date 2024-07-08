@@ -10,6 +10,7 @@
 
 typedef struct {
     bool isRunning;
+    bool redrawRequired;
     SDL_Window* window;
     SDL_Renderer* renderer;
 } state;

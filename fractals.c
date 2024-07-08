@@ -57,17 +57,20 @@ int main(void) {
     initialiseSDL(&window, &renderer, &state);
     
     while (state->isRunning) {
+        // If required update the screen.
+        if (state->redrawRequired) {
+            // Clear the screen to the draw colour.
+            SDL_ASSERT(SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255));
+            SDL_ASSERT(SDL_RenderClear(renderer));
+
+            // Draw fractal pixels.
+            SDL_ASSERT(drawPixels(renderer, window, setter));
+
+            // Update the screen.
+            SDL_RenderPresent(renderer);
+        }
+
         handleEvents(state);
-
-        // Clear the screen to the draw colour.
-        SDL_ASSERT(SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255));
-        SDL_ASSERT(SDL_RenderClear(renderer));
-
-        // Draw fractal pixels.
-        SDL_ASSERT(drawPixels(renderer, window, setter));
-
-        // Update the screen.
-        SDL_RenderPresent(renderer);
     }
 
     return EXIT_SUCCESS;
