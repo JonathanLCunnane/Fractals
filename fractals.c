@@ -17,7 +17,7 @@
 // relevant pixel. It returns 0 on success.
 // The x and y coordinates are counted from the top left.
 typedef int (*pixelSetter) (int x, int y, int width, int height, SDL_Renderer* r);
-static int mandlebrot(int x, int y, int width, int height, SDL_Renderer* r);
+static int grayscaleMandlebrot(int x, int y, int width, int height, SDL_Renderer* r);
 
 // drawPixels iterates through all the pixels on the screen and draws them.
 static int drawPixels(SDL_Renderer* r, SDL_Window* w, pixelSetter ps);
@@ -48,7 +48,7 @@ int main(void) {
      * PARSE COMMAND LINE ARGUMENTS
      */
 
-    pixelSetter setter = &mandlebrot;
+    pixelSetter setter = &grayscaleMandlebrot;
 
     /*
      *  INITIALISE AND RUN SDL
@@ -87,11 +87,16 @@ static int mandlebrotIters(double x, double y) {
     return n;
 }
 
-int mandlebrot(int x, int y, int width, int height, SDL_Renderer* r) {
+int grayscaleMandlebrot(int x, int y, int width, int height, SDL_Renderer* r) {
     double xmandle = RE_START + (((float) x / (float) width) * (RE_END - RE_START));
     double ymandle = IM_START + (((float) y / (float) height) * (IM_END - IM_START));
     int iters = mandlebrotIters(xmandle, ymandle);
-    int c = 255 - (255 * ((float) iters / (float) MAX_ITERS));
+    int c;
+    if (iters == MAX_ITERS) {
+        c = 0;
+    } else {
+        c = 255 * ((float) iters / (float) MAX_ITERS);
+    }
     if (
         SDL_SetRenderDrawColor(r, c, c, c, 255) == 0 &&
         SDL_RenderDrawPoint(r, x, y) == 0
