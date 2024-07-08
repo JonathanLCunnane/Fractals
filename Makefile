@@ -1,7 +1,8 @@
 CC 		?= gcc
-CFLAGS 	?= -Wall -Wextra -pedantic -std=c11
+CFLAGS 	?= -Wall -Wextra -pedantic -std=c11 -g
 TARGET = fractals
 SRCS = fractals.c state.c
+LIBS = -lm
 
 # SDL2 configuration
 SDL2_CFLAGS = $(shell sdl2-config --cflags)
@@ -13,7 +14,7 @@ OBJS = $(SRCS:.c=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) $(SDL2_LIBS)
+	$(CC) $(CFLAGS) $(OBJS) -o $(TARGET) $(SDL2_LIBS) $(LIBS)
 
 # Compile source files into object files
 %.o: %.c
