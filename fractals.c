@@ -85,8 +85,9 @@ int drawPixels(SDL_Renderer* r, SDL_Window* w, state* state) {
     int width;
     int height;
     SDL_GetWindowSize(w, &width, &height);
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
+    int inc = state->highRes ? 1 : LOW_RES_SIZE;
+    for (int x = 0; x < width; x += inc) {
+        for (int y = 0; y < height; y += inc) {
             // Set pixel.
             int success = state->pixelSetter(x, y, width, height, r, state);
             if (success != 0) return -1;

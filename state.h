@@ -26,6 +26,7 @@ struct state {
     bool isRunning;
     bool redrawRequired;
     bool inverted;
+    bool highRes;
     SDL_Window* window;
     SDL_Renderer* renderer;
 };

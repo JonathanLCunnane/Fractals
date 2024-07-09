@@ -54,10 +54,15 @@ static int grayscaleGeneral(int x, int y, int width, int height, SDL_Renderer* r
     if (state->inverted) {
         c = 255 - c;
     }
-    if (
-        SDL_SetRenderDrawColor(r, c, c, c, 255) == 0 &&
-        SDL_RenderDrawPoint(r, x, y) == 0
-    ) {
+    int setColor = SDL_SetRenderDrawColor(r, c, c, c, 255);
+    int drawPixel;
+    if (state->highRes) {
+        drawPixel = SDL_RenderDrawPoint(r, x, y);
+    } else {
+        SDL_Rect rect = {.x = x, .y = y, .w = LOW_RES_SIZE, .h = LOW_RES_SIZE};
+        drawPixel = SDL_RenderFillRect(r, &rect);
+    }
+    if (setColor == 0 && drawPixel == 0) {
         return 0;
     }
     return -1;

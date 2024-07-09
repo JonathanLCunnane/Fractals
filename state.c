@@ -14,6 +14,7 @@ state* initState(SDL_Window* w, SDL_Renderer* r) {
     state->fractalType = TYPE_MANDELBROT;
     state->redrawRequired = true;
     state->inverted = false;
+    state->highRes = false;
     state->isRunning = true;
     state->window = w;
     state->renderer = r;
@@ -53,11 +54,19 @@ void handleEvents(state* state) {
                     state->redrawRequired = true;
                     state->inverted = !(state->inverted);
                     break;
+                case SDLK_RETURN:
+                case SDLK_KP_ENTER:
+                    // Confirming selection, use highRes.
+                    if (!state->highRes) state->redrawRequired = true;
+                    state->highRes = true;
+                    break;
                 default:
                     break;
             }
             if (prevPixelSetter != nextPixelSetter) {
+                // Appearance changes, so use lowRes.
                 state->redrawRequired = true;
+                state->highRes = false;
                 state->pixelSetter = nextPixelSetter;
             }
             break;
