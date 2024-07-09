@@ -47,11 +47,12 @@ void handleEvents(state* state) {
                 case SDLK_1:
                     nextPixelSetter = &grayscaleCentreBlack;
                     break;
-                case SDLK_2: 
+                case SDLK_2:
                     nextPixelSetter = &grayscaleCentreWhite;
                     break;
                 case SDLK_i:
                     state->redrawRequired = true;
+                    state->highRes = false;
                     state->inverted = !(state->inverted);
                     break;
                 case SDLK_RETURN:
