@@ -2,15 +2,18 @@
 #include <assert.h>
 #include <SDL2/SDL.h>
 
+#include "colour_functions.h"
 #include "state.h"
 
 
 state* initState(SDL_Window* w, SDL_Renderer* r) {
-    state* state = malloc(sizeof(state));
+    state* state = malloc(sizeof(struct state));
     assert(state != NULL);
 
+    state->pixelSetter = &grayscaleCentreBlack;
     state->fractalType = TYPE_MANDELBROT;
     state->redrawRequired = true;
+    state->inverted = false;
     state->isRunning = true;
     state->window = w;
     state->renderer = r;
@@ -22,6 +25,8 @@ void handleEvents(state* state) {
     state->isRunning = true;
     SDL_Event event;
     SDL_PollEvent(&event);
+    pixelSetter prevPixelSetter = state->pixelSetter;
+    pixelSetter nextPixelSetter = prevPixelSetter;
     switch (event.type) {
         case SDL_QUIT:
             state->isRunning = false;
@@ -34,6 +39,26 @@ void handleEvents(state* state) {
                     break;
                 default:
                     break;
+            }
+            break;
+        case SDL_KEYDOWN:
+            switch (event.key.keysym.sym) {
+                case SDLK_1:
+                    nextPixelSetter = &grayscaleCentreBlack;
+                    break;
+                case SDLK_2: 
+                    nextPixelSetter = &grayscaleCentreWhite;
+                    break;
+                case SDLK_i:
+                    state->redrawRequired = true;
+                    state->inverted = !(state->inverted);
+                    break;
+                default:
+                    break;
+            }
+            if (prevPixelSetter != nextPixelSetter) {
+                state->redrawRequired = true;
+                state->pixelSetter = nextPixelSetter;
             }
             break;
         default:

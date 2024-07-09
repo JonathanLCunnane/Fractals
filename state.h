@@ -13,21 +13,22 @@
 #include <stdint.h>
 #include <complex.h>
 
-typedef struct {
-    uint8_t fractalType;
+typedef struct state state;
+struct state {
     union {
         struct {
             int P;
             double complex c;
         } julia;
     } fractalArgs;
+    uint8_t fractalType; /* See the top of this file for types */
+    int (*pixelSetter) (int x, int y, int width, int height, SDL_Renderer* r, state* state);
     bool isRunning;
     bool redrawRequired;
+    bool inverted;
     SDL_Window* window;
     SDL_Renderer* renderer;
-} state;
-// fractalType = 0x0 -> Mandelbrot (DEFAULT)
-// fractalType = 0x1 -> Julia
+};
 
 state* initState();
 void handleEvents(state*);
