@@ -66,6 +66,17 @@ void handleEvents(state* state) {
                     state->inverted = !(state->inverted);
                     break;
                 /*
+                 * RESET STATE 
+                 */
+                case SDLK_r:
+                    state->fractalType = TYPE_MANDELBROT;
+                    state->colourMultiplier = 1.0;
+                    state->colourOffset = 0;
+                    state->redrawRequired = true;
+                    state->inverted = false;
+                    state->highRes = false;
+                    break;
+                /*
                  * CHANGE COLOUR BAND COUNT VIA MULTIPLIER
                  */
                 case SDLK_UP:
