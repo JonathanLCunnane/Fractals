@@ -3,6 +3,56 @@
 #include "colour_functions.h"
 #include "fractal_functions.h"
 
+static int rainbowColours[] = {
+    0xe81416, // Red
+    0xffa500, // Orange
+    0xfaeb36, // Yellow
+    0x79c314, // Green
+    0x487de7, // Blue
+    0x4b369d, // Indigo
+    0x70369d, // Violet
+};
+
+int linearInterpolate(int start, int end, float t) {
+    return COLOUR(
+        (int) (RED_COMPONENT(start) + (t * (RED_COMPONENT(end) - RED_COMPONENT(start)))),
+        (int) (GREEN_COMPONENT(start) + (t * (GREEN_COMPONENT(end) - GREEN_COMPONENT(start)))),
+        (int) (BLUE_COMPONENT(start) + (t * (BLUE_COMPONENT(end) - BLUE_COMPONENT(start))))
+    );
+}
+
+int setPixel(int x, int y, int colour, SDL_Renderer* r, state* state) {
+    int setColour;
+    if (state->inverted) {
+        setColour = SDL_SetRenderDrawColor(
+            r, 
+            255 - RED_COMPONENT(colour), 
+            255 - GREEN_COMPONENT(colour), 
+            255 - BLUE_COMPONENT(colour), 
+            255
+        );
+    } else {
+        setColour = SDL_SetRenderDrawColor(
+            r, 
+            RED_COMPONENT(colour), 
+            GREEN_COMPONENT(colour), 
+            BLUE_COMPONENT(colour), 
+            255
+        );
+    }
+    int drawPixel;
+    if (state->highRes) {
+        drawPixel = SDL_RenderDrawPoint(r, x, y);
+    } else {
+        SDL_Rect rect = {.x = x, .y = y, .w = LOW_RES_SIZE, .h = LOW_RES_SIZE};
+        drawPixel = SDL_RenderFillRect(r, &rect);
+    }
+    if (setColour == 0 && drawPixel == 0) {
+        return 0;
+    }
+    return -1;
+}
+
 static fractalOut getResult(int x, int y, int width, int height, state* state) {
     double complex z = RE_START + (((float) x / (float) width) * (RE_END - RE_START))
                 + (I * (IM_START + (((float) y / (float) height) * (IM_END - IM_START))));
@@ -24,7 +74,7 @@ static fractalOut getResult(int x, int y, int width, int height, state* state) {
     }
 }
 
-static int grayscaleGeneral(int x, int y, int width, int height, SDL_Renderer* r, state* state, bool centreWhite) {
+static int grayscaleGeneral(int x, int y, int width, int height, state* state, bool centreWhite) {
     fractalOut out = getResult(x, y, width, height, state);
     int c;
     if (out.iters == -1) {
@@ -34,45 +84,46 @@ static int grayscaleGeneral(int x, int y, int width, int height, SDL_Renderer* r
             c = 0;
         }
     } else {
-        int P;
-        switch (state->fractalType) {
-            case TYPE_MANDELBROT:
-                P = 2;
-                break;
-            case TYPE_JULIA:
-                P = state->fractalArgs.julia.P;
-                break;
-            default:
-                fprintf(stderr, "Unknown fractal type %d.\n", state->fractalType);
-                exit(EXIT_FAILURE);
-                break;
+        c = 255 * ((float) out.smoothIters / (float) MAX_ITERS);
+    }
+    return COLOUR(c, c, c);
+}
+
+static int outsideColourGeneral(
+    int x, int y, int width, int height, state* state, 
+    bool centreWhite, int numColours, int* colours
+) {
+    fractalOut out = getResult(x, y, width, height, state);
+    int c;
+    if (out.iters == -1) {
+        if (centreWhite) {
+            c = 0xFFFFFF;
+        } else {
+            c = 0x000000;
         }
-        float logEnd = log(cabs(out.end));
-        float newIters = out.iters - (log(logEnd / log(2)) / log(P));
-        c = 255 * ((float) newIters / (float) MAX_ITERS);
-    }
-    if (state->inverted) {
-        c = 255 - c;
-    }
-    int setColor = SDL_SetRenderDrawColor(r, c, c, c, 255);
-    int drawPixel;
-    if (state->highRes) {
-        drawPixel = SDL_RenderDrawPoint(r, x, y);
     } else {
-        SDL_Rect rect = {.x = x, .y = y, .w = LOW_RES_SIZE, .h = LOW_RES_SIZE};
-        drawPixel = SDL_RenderFillRect(r, &rect);
+        int colourIDX = (int) floor(out.smoothIters) % numColours;
+        int startColour = colours[colourIDX];
+        int endColour;
+        if (colourIDX == numColours - 1) {
+            endColour = colours[0];
+        } else {
+            endColour = colours[colourIDX + 1];
+        }
+        c = endColour;
+        //c = linearInterpolate(startColour, endColour, out.smoothIters - floor(out.smoothIters));
     }
-    if (setColor == 0 && drawPixel == 0) {
-        return 0;
-    }
-    return -1;
+    return c;
 }
 
-int grayscaleCentreBlack(int x, int y, int width, int height, SDL_Renderer* r, state* state) {
-    return grayscaleGeneral(x, y, width, height, r, state, false);
+int grayscaleCentreBlack(int x, int y, int width, int height, state* state) {
+    return grayscaleGeneral(x, y, width, height, state, false);
 }
 
-int grayscaleCentreWhite(int x, int y, int width, int height, SDL_Renderer* r, state* state) {
-    return grayscaleGeneral(x, y, width, height, r, state, true);
+int grayscaleCentreWhite(int x, int y, int width, int height, state* state) {
+    return grayscaleGeneral(x, y, width, height, state, true);
 }
 
+int rainbowColourCentreBlack(int x, int y, int width, int height, state* state) {
+    return outsideColourGeneral(x, y, width, height, state, false, 7, rainbowColours);
+}

@@ -1,4 +1,5 @@
 #include <complex.h>
+#include <math.h>
 #include "fractal_functions.h"
 
 // Returns the iterations required before the
@@ -16,8 +17,10 @@ fractalOut mandelbrot(double complex c) {
             break;
         }
     }
+    float logEnd = log(cabs(z));
+    float smoothIters = n + 1 - (log(logEnd / log(2)) / log(2));
     fractalOut out = {
-        .iters = n,
+        .iters = n, .smoothIters = smoothIters,
         .start = c,
         .end   = z
     };
@@ -42,6 +45,8 @@ fractalOut julia(int P, double complex z, double complex c) {
             break;
         }
     }
+    float logEnd = log(cabs(z));
+    out.smoothIters = n + 1 - (log(logEnd / log(2)) / log(P));
     out.iters = n;
     out.end = z;
     return out;

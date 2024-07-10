@@ -44,14 +44,14 @@ int main(void) {
      * PARSE COMMAND LINE ARGUMENTS
      */
 
-    pixelSetter setter = &grayscaleCentreBlack;
+    pixelGetter setter = &grayscaleCentreBlack;
 
     /*
      *  INITIALISE AND RUN SDL
      */
     SDL_Window* window; SDL_Renderer* renderer; state* state;
     initialiseSDL(&window, &renderer, &state);
-    state->pixelSetter = setter;
+    state->pixelGetter = setter;
     
     while (state->isRunning) {
         // If required update the screen.
@@ -89,7 +89,8 @@ int drawPixels(SDL_Renderer* r, SDL_Window* w, state* state) {
     for (int x = 0; x < width; x += inc) {
         for (int y = 0; y < height; y += inc) {
             // Set pixel.
-            int success = state->pixelSetter(x, y, width, height, r, state);
+            int colour = state->pixelGetter(x, y, width, height, state);
+            int success = setPixel(x, y, colour, r, state);
             if (success != 0) return -1;
         }
     }

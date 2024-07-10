@@ -8,6 +8,7 @@ typedef struct {
     double complex start;
     double complex end;
     int iters;
+    float smoothIters;
 } fractalOut;
 
 extern fractalOut mandelbrot(double complex);

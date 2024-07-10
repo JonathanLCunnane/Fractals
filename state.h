@@ -22,7 +22,7 @@ struct state {
         } julia;
     } fractalArgs;
     uint8_t fractalType; /* See the top of this file for types */
-    int (*pixelSetter) (int x, int y, int width, int height, SDL_Renderer* r, state* state);
+    int (*pixelGetter) (int x, int y, int width, int height, state* state);
     bool isRunning;
     bool redrawRequired;
     bool inverted;

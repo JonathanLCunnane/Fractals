@@ -5,12 +5,11 @@
 #include "colour_functions.h"
 #include "state.h"
 
-
 state* initState(SDL_Window* w, SDL_Renderer* r) {
     state* state = malloc(sizeof(struct state));
     assert(state != NULL);
 
-    state->pixelSetter = &grayscaleCentreBlack;
+    state->pixelGetter = &grayscaleCentreBlack;
     state->fractalType = TYPE_MANDELBROT;
     state->redrawRequired = true;
     state->inverted = false;
@@ -26,8 +25,8 @@ void handleEvents(state* state) {
     state->isRunning = true;
     SDL_Event event;
     SDL_PollEvent(&event);
-    pixelSetter prevPixelSetter = state->pixelSetter;
-    pixelSetter nextPixelSetter = prevPixelSetter;
+    pixelGetter prevPixelGetter = state->pixelGetter;
+    pixelGetter nextPixelGetter = prevPixelGetter;
     switch (event.type) {
         case SDL_QUIT:
             state->isRunning = false;
@@ -45,10 +44,13 @@ void handleEvents(state* state) {
         case SDL_KEYDOWN:
             switch (event.key.keysym.sym) {
                 case SDLK_1:
-                    nextPixelSetter = &grayscaleCentreBlack;
+                    nextPixelGetter = &grayscaleCentreBlack;
                     break;
                 case SDLK_2:
-                    nextPixelSetter = &grayscaleCentreWhite;
+                    nextPixelGetter = &grayscaleCentreWhite;
+                    break;
+                case SDLK_3:
+                    nextPixelGetter = &rainbowColourCentreBlack;
                     break;
                 case SDLK_i:
                     state->redrawRequired = true;
@@ -64,11 +66,11 @@ void handleEvents(state* state) {
                 default:
                     break;
             }
-            if (prevPixelSetter != nextPixelSetter) {
+            if (prevPixelGetter != nextPixelGetter) {
                 // Appearance changes, so use lowRes.
                 state->redrawRequired = true;
                 state->highRes = false;
-                state->pixelSetter = nextPixelSetter;
+                state->pixelGetter = nextPixelGetter;
             }
             break;
         default:
