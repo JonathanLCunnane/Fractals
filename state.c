@@ -11,6 +11,8 @@ state* initState(SDL_Window* w, SDL_Renderer* r) {
 
     state->pixelGetter = &grayscaleCentreBlack;
     state->fractalType = TYPE_MANDELBROT;
+    state->colourMultiplier = 1.0;
+    state->colourOffset = 0;
     state->redrawRequired = true;
     state->inverted = false;
     state->highRes = false;
@@ -43,6 +45,9 @@ void handleEvents(state* state) {
             break;
         case SDL_KEYDOWN:
             switch (event.key.keysym.sym) {
+                /*
+                 * CHANGE COLOUR MODE
+                 */
                 case SDLK_1:
                     nextPixelGetter = &grayscaleCentreBlack;
                     break;
@@ -52,11 +57,43 @@ void handleEvents(state* state) {
                 case SDLK_3:
                     nextPixelGetter = &rainbowColourCentreBlack;
                     break;
+                /*
+                 * INVERT COLOURS
+                 */
                 case SDLK_i:
                     state->redrawRequired = true;
                     state->highRes = false;
                     state->inverted = !(state->inverted);
                     break;
+                /*
+                 * CHANGE COLOUR BAND COUNT VIA MULTIPLIER
+                 */
+                case SDLK_UP:
+                    state->redrawRequired = true;
+                    state->highRes = false;
+                    state->colourMultiplier *= COLOUR_ADJUST_MULTIPLIER;
+                    break;
+                case SDLK_DOWN:
+                    state->redrawRequired = true;
+                    state->highRes = false;
+                    state->colourMultiplier /= COLOUR_ADJUST_MULTIPLIER;
+                    break;
+                /*
+                 * CHANGE COLOUR BAND COLOUR VIA OFFSET
+                 */
+                case SDLK_LEFT:
+                    state->redrawRequired = true;
+                    state->highRes = false;
+                    state->colourOffset++;
+                    break;
+                case SDLK_RIGHT:
+                    state->redrawRequired = true;
+                    state->highRes = false;
+                    state->colourOffset++;
+                    break;
+                /*
+                 * CONFIRM SELECTION
+                 */
                 case SDLK_RETURN:
                 case SDLK_KP_ENTER:
                     // Confirming selection, use highRes.

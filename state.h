@@ -21,6 +21,8 @@ struct state {
             double complex c;
         } julia;
     } fractalArgs;
+    float colourMultiplier; // For changing the number of bands of colour for certain colour modes.
+    int colourOffset; // For cycling the colours in the bands in certain modes.
     uint8_t fractalType; /* See the top of this file for types */
     int (*pixelGetter) (int x, int y, int width, int height, state* state);
     bool isRunning;

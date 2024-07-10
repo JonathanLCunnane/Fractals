@@ -83,10 +83,19 @@ static int grayscaleGeneral(int x, int y, int width, int height, state* state, b
         } else {
             c = 0;
         }
+               
     } else {
         c = 255 * ((float) out.smoothIters / (float) MAX_ITERS);
     }
     return COLOUR(c, c, c);
+}
+
+static int getOutsideLerp(fractalOut out, state* state, int numColours, int* colours) {
+    int smoothItersFloor = floor(out.smoothIters * state->colourMultiplier);
+    int colourIDX = smoothItersFloor + state->colourOffset;
+    int startColour = colours[colourIDX % numColours];
+    int endColour = colours[(colourIDX + 1) % numColours];
+    return linearInterpolate(startColour, endColour, (out.smoothIters * state->colourMultiplier) - smoothItersFloor);
 }
 
 static int outsideColourGeneral(
@@ -102,16 +111,7 @@ static int outsideColourGeneral(
             c = 0x000000;
         }
     } else {
-        int colourIDX = (int) floor(out.smoothIters) % numColours;
-        int startColour = colours[colourIDX];
-        int endColour;
-        if (colourIDX == numColours - 1) {
-            endColour = colours[0];
-        } else {
-            endColour = colours[colourIDX + 1];
-        }
-        c = endColour;
-        //c = linearInterpolate(startColour, endColour, out.smoothIters - floor(out.smoothIters));
+        c = getOutsideLerp(out, state, numColours, colours);
     }
     return c;
 }

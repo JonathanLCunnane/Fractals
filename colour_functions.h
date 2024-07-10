@@ -16,6 +16,8 @@
 #define BLUE_COMPONENT(x) (x & 0xFF)
 #define COLOUR(r, g, b) ((r << 16) | (g << 8) | b)
 
+#define COLOUR_ADJUST_MULTIPLIER 1.5
+
 // Interpolate from colour 'start' to 'end'. t is in between 0 and 1. 
 // If start = 0xFF00AA, then R = 0xFF, G = 0x00, B = 0xAA
 extern int linearInterpolate(int start, int end, float t);
