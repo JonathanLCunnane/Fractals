@@ -95,7 +95,7 @@ void handleEvents(state* state) {
                 case SDLK_LEFT:
                     state->redrawRequired = true;
                     state->highRes = false;
-                    state->colourOffset++;
+                    state->colourOffset--;
                     break;
                 case SDLK_RIGHT:
                     state->redrawRequired = true;
