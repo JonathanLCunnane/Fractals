@@ -13,7 +13,7 @@ static int rainbowColours[] = {
     0x70369d, // Violet
 };
 
-int linearInterpolate(int start, int end, float t) {
+int linearInterpolate(int start, int end, double t) {
     return COLOUR(
         (int) (RED_COMPONENT(start) + (t * (RED_COMPONENT(end) - RED_COMPONENT(start)))),
         (int) (GREEN_COMPONENT(start) + (t * (GREEN_COMPONENT(end) - GREEN_COMPONENT(start)))),
@@ -53,9 +53,9 @@ int setPixel(int x, int y, int colour, SDL_Renderer* r, state* state) {
     return -1;
 }
 
-static fractalOut getResult(int x, int y, int width, int height, state* state) {
-    double complex z = RE_START + (((float) x / (float) width) * (RE_END - RE_START))
-                + (I * (IM_START + (((float) y / (float) height) * (IM_END - IM_START))));
+static fractalOut getResult(int x, int y, state* state) {
+    vec2 coord = getCoord(state, x, y);
+    double complex z = coord.x + (I * coord.y);
     switch (state->fractalType) {
         case TYPE_MANDELBROT:
             return mandelbrot(z);
@@ -74,8 +74,8 @@ static fractalOut getResult(int x, int y, int width, int height, state* state) {
     }
 }
 
-static int grayscaleGeneral(int x, int y, int width, int height, state* state, bool centreWhite) {
-    fractalOut out = getResult(x, y, width, height, state);
+static int grayscaleGeneral(int x, int y, state* state, bool centreWhite) {
+    fractalOut out = getResult(x, y, state);
     int c;
     if (out.iters == -1) {
         if (centreWhite) {
@@ -85,7 +85,7 @@ static int grayscaleGeneral(int x, int y, int width, int height, state* state, b
         }
                
     } else {
-        c = 255 * ((float) out.smoothIters / (float) MAX_ITERS);
+        c = 255 * ((double) out.smoothIters / (double) MAX_ITERS);
     }
     return COLOUR(c, c, c);
 }
@@ -99,10 +99,10 @@ static int getOutsideLerp(fractalOut out, state* state, int numColours, int* col
 }
 
 static int outsideColourGeneral(
-    int x, int y, int width, int height, state* state, 
+    int x, int y, state* state, 
     bool centreWhite, int numColours, int* colours
 ) {
-    fractalOut out = getResult(x, y, width, height, state);
+    fractalOut out = getResult(x, y, state);
     int c;
     if (out.iters == -1) {
         if (centreWhite) {
@@ -116,14 +116,14 @@ static int outsideColourGeneral(
     return c;
 }
 
-int grayscaleCentreBlack(int x, int y, int width, int height, state* state) {
-    return grayscaleGeneral(x, y, width, height, state, false);
+int grayscaleCentreBlack(int x, int y, state* state) {
+    return grayscaleGeneral(x, y, state, false);
 }
 
-int grayscaleCentreWhite(int x, int y, int width, int height, state* state) {
-    return grayscaleGeneral(x, y, width, height, state, true);
+int grayscaleCentreWhite(int x, int y, state* state) {
+    return grayscaleGeneral(x, y, state, true);
 }
 
-int rainbowColourCentreBlack(int x, int y, int width, int height, state* state) {
-    return outsideColourGeneral(x, y, width, height, state, false, 7, rainbowColours);
+int rainbowColourCentreBlack(int x, int y, state* state) {
+    return outsideColourGeneral(x, y, state, false, 7, rainbowColours);
 }

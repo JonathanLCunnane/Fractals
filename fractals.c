@@ -16,7 +16,7 @@
 #define BMRK
 
 // drawPixels iterates through all the pixels on the screen and draws them.
-static int drawPixels(SDL_Renderer* r, SDL_Window* w, state* state);
+static int drawPixels(SDL_Renderer* r, state* state);
 
 void initialiseSDL(SDL_Window** window, SDL_Renderer** renderer, state** state) {
     // Initialises the SDL library.
@@ -64,7 +64,7 @@ int main(void) {
 #ifdef BMRK
             clock_t begin = clock();
 #endif
-            SDL_ASSERT(drawPixels(renderer, window, state));
+            SDL_ASSERT(drawPixels(renderer, state));
 #ifdef BMRK
             clock_t end = clock();
             double time_spent = (double)(end - begin)/ CLOCKS_PER_SEC;
@@ -81,15 +81,12 @@ int main(void) {
     return EXIT_SUCCESS;
 }
 
-int drawPixels(SDL_Renderer* r, SDL_Window* w, state* state) {
-    int width;
-    int height;
-    SDL_GetWindowSize(w, &width, &height);
+int drawPixels(SDL_Renderer* r, state* state) {
     int inc = state->highRes ? 1 : LOW_RES_SIZE;
-    for (int x = 0; x < width; x += inc) {
-        for (int y = 0; y < height; y += inc) {
+    for (int x = 0; x < state->windowWidth; x += inc) {
+        for (int y = 0; y < state->windowHeight; y += inc) {
             // Set pixel.
-            int colour = state->pixelGetter(x, y, width, height, state);
+            int colour = state->pixelGetter(x, y, state);
             int success = setPixel(x, y, colour, r, state);
             if (success != 0) return -1;
         }

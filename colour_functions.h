@@ -4,11 +4,6 @@
 #include <SDL2/SDL.h>
 #include "state.h"
 
-#define RE_START -2.0f
-#define RE_END 2.0f
-#define IM_START -2.0f
-#define IM_END 2.0f
-
 #define LOW_RES_SIZE 5
 
 #define RED_COMPONENT(x) ((x & (0xFF << 16)) >> 16)
@@ -20,7 +15,7 @@
 
 // Interpolate from colour 'start' to 'end'. t is in between 0 and 1. 
 // If start = 0xFF00AA, then R = 0xFF, G = 0x00, B = 0xAA
-extern int linearInterpolate(int start, int end, float t);
+extern int linearInterpolate(int start, int end, double t);
 
 // setPixel takes the colour which we need to set the pixel
 // and the information in state to set the pixel correctly.
@@ -30,9 +25,9 @@ extern int setPixel(int x, int y, int colour, SDL_Renderer* r, state* state);
 // A pixelGetter takes in x and y values, the width and height of the window,
 // and gets the relevant pixel colour based on the iterations. It returns the colour to set the pixel.
 // The x and y coordinates are counted from the top left.
-typedef int (*pixelGetter) (int x, int y, int width, int height, state* state);
-extern int grayscaleCentreBlack(int x, int y, int width, int height, state* state);
-extern int grayscaleCentreWhite(int x, int y, int width, int height, state* state);
-extern int rainbowColourCentreBlack(int x, int y, int width, int height, state* state);
+typedef int (*pixelGetter) (int x, int y, state* state);
+extern int grayscaleCentreBlack(int x, int y, state* state);
+extern int grayscaleCentreWhite(int x, int y, state* state);
+extern int rainbowColourCentreBlack(int x, int y, state* state);
 
 #endif

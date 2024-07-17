@@ -8,7 +8,12 @@
 state* initState(SDL_Window* w, SDL_Renderer* r) {
     state* state = malloc(sizeof(struct state));
     assert(state != NULL);
-
+   
+    state->re_start = -2.0;
+    state->re_end = 2.0;
+    state->im_start = -2.0;
+    state->im_end = 2.0;
+    SDL_GetWindowSize(w, &state->windowWidth, &state->windowHeight);
     state->pixelGetter = &grayscaleCentreBlack;
     state->fractalType = TYPE_MANDELBROT;
     state->colourMultiplier = 1.0;
@@ -22,6 +27,24 @@ state* initState(SDL_Window* w, SDL_Renderer* r) {
     return state;
 }
 
+vec2 getCoord(state* state, int x, int y) {
+    double xCoord = state->re_start + (((double) x / (double) state->windowWidth) * (state->re_end - state->re_start));
+    double yCoord = state->im_end - (((double) y / (double) state->windowHeight) * (state->im_end - state->im_start));
+    return (vec2) {
+        .x = xCoord, 
+        .y = yCoord
+    };
+}
+
+static void zoomIn(state* state, vec2 at, double factor) {
+    double new_im_size = (state->im_end - state->im_start) / factor;
+    double new_re_size = (state->re_end - state->re_start) / factor;
+    state->re_start = at.x - (new_re_size / 2);
+    state->re_end = at.x + (new_re_size / 2);
+    state->im_start = at.y - (new_im_size / 2);
+    state->im_end = at.y + (new_im_size / 2);
+}
+
 void handleEvents(state* state) {
     state->redrawRequired = false;
     state->isRunning = true;
@@ -29,6 +52,7 @@ void handleEvents(state* state) {
     SDL_PollEvent(&event);
     pixelGetter prevPixelGetter = state->pixelGetter;
     pixelGetter nextPixelGetter = prevPixelGetter;
+    vec2 mouseCoord;
     switch (event.type) {
         case SDL_QUIT:
             state->isRunning = false;
@@ -37,12 +61,17 @@ void handleEvents(state* state) {
             switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    state->windowWidth = event.window.data1;
+                    state->windowHeight = event.window.data2;
                     state->redrawRequired = true;
                     break;
                 default:
                     break;
             }
             break;
+        /*
+         * KEYBOARD HANDLING
+         */
         case SDL_KEYDOWN:
             switch (event.key.keysym.sym) {
                 /*
@@ -58,6 +87,7 @@ void handleEvents(state* state) {
                     nextPixelGetter = &rainbowColourCentreBlack;
                     break;
                 /*
+                    zoomIn(state, mouseCoord, ZOOM_FACTOR);
                  * INVERT COLOURS
                  */
                 case SDLK_i:
@@ -69,6 +99,10 @@ void handleEvents(state* state) {
                  * RESET STATE 
                  */
                 case SDLK_r:
+                    state->re_start = -2.0;
+                    state->im_end = 2.0;
+                    state->im_start = -2.0;
+                    state->re_end = 2.0; 
                     state->fractalType = TYPE_MANDELBROT;
                     state->colourMultiplier = 1.0;
                     state->colourOffset = 0;
@@ -119,6 +153,28 @@ void handleEvents(state* state) {
                 state->redrawRequired = true;
                 state->highRes = false;
                 state->pixelGetter = nextPixelGetter;
+            }
+            break;
+        /*
+         * MOUSE EVENT HANDLING.
+         */
+        case SDL_MOUSEBUTTONDOWN:
+            mouseCoord = getCoord(state, event.button.x, event.button.y);
+            state->redrawRequired = true;
+            state->highRes = false;
+            printf("x, y = %f, %f\n", mouseCoord.x, mouseCoord.y);
+            switch (event.button.button) {
+                case SDL_BUTTON_LEFT: // Zoom in
+                    zoomIn(state, mouseCoord, ZOOM_FACTOR);
+                    break;
+                case SDL_BUTTON_MIDDLE: // Switch to Julia at point
+                    state->fractalType = TYPE_JULIA;
+                    state->fractalArgs.julia.P = 2;
+                    state->fractalArgs.julia.c = mouseCoord.x + (mouseCoord.y * I);
+                    break;
+                case SDL_BUTTON_RIGHT: // Zoom out
+                    zoomIn(state, mouseCoord, 1 / ZOOM_FACTOR);
+                    break;
             }
             break;
         default:
