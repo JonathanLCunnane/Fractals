@@ -92,9 +92,19 @@ static fractalOut getResult(int x, int y, state* state) {
             break;
         case TYPE_JULIA:
             return julia(
-                state->fractalArgs.julia.P,
                 z,
                 state->fractalArgs.julia.c,
+                state->max_iters
+            );
+            break;
+        case TYPE_MULTIBROT:
+            return multibrot(state->fractalArgs.multibrot.P, z, state->max_iters);
+            break;
+        case TYPE_MULTIJULIA:
+            return multijulia(
+                state->fractalArgs.multijulia.P, 
+                z,
+                state->fractalArgs.multijulia.c,
                 state->max_iters
             );
             break;

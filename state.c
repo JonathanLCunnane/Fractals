@@ -5,7 +5,8 @@
 #include "colour_functions.h"
 #include "state.h"
 
-#define MAX_WINDOW_TITLE_LENGTH 200
+#define MAX_WINDOW_TITLE_LENGTH 400
+#define MAX_MODE_LENGTH 200
 
 state* initState(SDL_Window* w, SDL_Renderer* r, SDL_Texture* t, uint32_t* pixels) {
     state* state = malloc(sizeof(struct state));
@@ -54,13 +55,22 @@ static void zoomIn(state* state, vec2 at, double factor) {
 
 static void updateWindowText(state* state, vec2 mouseCoords) {
     char buf[MAX_WINDOW_TITLE_LENGTH];
-    char* mode;
+    char mode[MAX_MODE_LENGTH];
     switch (state->fractalType) {
         case TYPE_MANDELBROT:
-            mode = "Mandelbrot";
+            strcpy(mode, "Mandelbrot");
             break;
         case TYPE_JULIA:
-            mode = "Julia";
+            sprintf(mode, "Julia (c=%.5f + %.5fi)", creal(state->fractalArgs.multijulia.c),
+                    cimag(state->fractalArgs.multijulia.c));
+            break;
+        case TYPE_MULTIBROT:
+            sprintf(mode, "Multibrot (d=%d)", state->fractalArgs.multibrot.P);
+            break;
+        case TYPE_MULTIJULIA:
+            sprintf(mode, "Multijulia (P=%d, c=%.5f + %.5fi)", 
+                    state->fractalArgs.multijulia.P, creal(state->fractalArgs.multijulia.c),
+                    cimag(state->fractalArgs.multijulia.c));
             break;
     }
     sprintf(
@@ -68,6 +78,50 @@ static void updateWindowText(state* state, vec2 mouseCoords) {
         state->max_iters, mode, mouseCoords.x, mouseCoords.y
     );
     SDL_SetWindowTitle(state->window, buf);
+}
+
+static void resetState(state* state) {
+    state->re_start = -2.0;
+    state->im_end = 2.0;
+    state->im_start = -2.0;
+    state->re_end = 2.0; 
+    if (TYPE_IS_MULTI(state->fractalType)) {
+        if (state->fractalType == TYPE_MULTIJULIA) {
+            state->fractalArgs.multibrot.P = state->fractalArgs.multijulia.P;
+        }
+        state->fractalType = TYPE_MULTIBROT;
+    } else {
+        state->fractalType = TYPE_MANDELBROT;
+    }
+    state->colourMultiplier = 1.0;
+    state->colourOffset = 0;
+    state->redrawRequired = true;
+    state->inverted = false;
+}
+
+static void changeP(state* state, int inc) {
+    if (TYPE_IS_MULTI(state->fractalType)) {
+        switch (state->fractalType) {
+            case TYPE_MULTIBROT:
+                state->fractalArgs.multibrot.P += inc;
+                if (state->fractalArgs.multibrot.P > 20) { 
+                    state->fractalArgs.multibrot.P = 20;
+                }
+                else if (state->fractalArgs.multibrot.P < -20) { 
+                    state->fractalArgs.multibrot.P = -20;
+                }
+                break;
+            case TYPE_MULTIJULIA:
+                state->fractalArgs.multijulia.P += inc;
+                if (state->fractalArgs.multijulia.P > 20) { 
+                    state->fractalArgs.multijulia.P = 20;
+                }
+                else if (state->fractalArgs.multijulia.P < -20) { 
+                    state->fractalArgs.multijulia.P = -20;
+                }
+                break;
+        }
+    }
 }
 
 void handleEvents(state* state) {
@@ -132,15 +186,31 @@ void handleEvents(state* state) {
                  * RESET STATE 
                  */
                 case SDLK_r:
-                    state->re_start = -2.0;
-                    state->im_end = 2.0;
-                    state->im_start = -2.0;
-                    state->re_end = 2.0; 
-                    state->fractalType = TYPE_MANDELBROT;
-                    state->colourMultiplier = 1.0;
-                    state->colourOffset = 0;
+                    resetState(state);
+                    break;
+                /*
+                 * ENTER OR EXIT MULTI MODE
+                 */
+                case SDLK_m:
+                    if (TYPE_IS_MULTI(state->fractalType)) {
+                        state->fractalType = TYPE_MANDELBROT;
+                        resetState(state);
+                    } else {
+                        state->fractalType = TYPE_MULTIBROT;
+                        state->fractalArgs.multibrot.P = 2;
+                        resetState(state);
+                    }
+                    break;
+                /*
+                 * INCREASE AND DECREASE P IF IN A MULTI MODE
+                 */
+                case SDLK_LEFTBRACKET:
+                    changeP(state, -1);
                     state->redrawRequired = true;
-                    state->inverted = false;
+                    break;
+                case SDLK_RIGHTBRACKET:
+                    changeP(state, 1);
+                    state->redrawRequired = true;
                     break;
                 /*
                  * CHANGE COLOUR BAND COUNT VIA MULTIPLIER
@@ -184,9 +254,25 @@ void handleEvents(state* state) {
                     zoomIn(state, mouseCoords, ZOOM_FACTOR);
                     break;
                 case SDL_BUTTON_MIDDLE: // Switch to Julia at point
-                    state->fractalType = TYPE_JULIA;
-                    state->fractalArgs.julia.P = 2;
-                    state->fractalArgs.julia.c = mouseCoords.x + (mouseCoords.y * I);
+                    switch (state->fractalType) {
+                        case TYPE_MANDELBROT:
+                            state->fractalType = TYPE_JULIA;
+                            state->fractalArgs.julia.c = mouseCoords.x + (mouseCoords.y * I);
+                            break;
+                        case TYPE_JULIA:
+                            state->fractalArgs.julia.c = mouseCoords.x + (mouseCoords.y * I);
+                            break;
+                        case TYPE_MULTIBROT:
+                            state->fractalType = TYPE_MULTIJULIA;
+                            state->fractalArgs.multijulia.P = state->fractalArgs.multibrot.P;
+                            state->fractalArgs.multijulia.c = mouseCoords.x + (mouseCoords.y * I);
+                            break;
+                        case TYPE_MULTIJULIA:
+                            state->fractalArgs.multijulia.c = mouseCoords.x + (mouseCoords.y * I);
+                            break;
+                    }
+                    state->re_start = -2.0; state->re_end = 2.0;
+                    state->im_start = -2.0; state->im_end = 2.0;
                     updateWindowText(state, mouseCoords);
                     break;
                 case SDL_BUTTON_RIGHT: // Zoom out

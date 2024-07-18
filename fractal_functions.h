@@ -11,6 +11,8 @@ typedef struct {
 } fractalOut;
 
 extern fractalOut mandelbrot(double complex, int);
-extern fractalOut julia(int, double complex, double complex, int);
+extern fractalOut julia(double complex, double complex, int);
+extern fractalOut multibrot(int, double complex, int);
+extern fractalOut multijulia(int, double complex, double complex, int);
 
 #endif

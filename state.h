@@ -8,6 +8,9 @@
 
 #define TYPE_MANDELBROT 0x0
 #define TYPE_JULIA 0x1
+#define TYPE_MULTIBROT 0x2
+#define TYPE_MULTIJULIA 0x3
+#define TYPE_IS_MULTI(type) ((type >> 1) != 0)
 
 #define ZOOM_FACTOR 1.5
 
@@ -23,9 +26,15 @@ typedef struct state state;
 struct state {
     union {
         struct {
-            int P;
             double complex c;
         } julia;
+        struct {
+            double complex c;
+            int P;
+        } multijulia;
+        struct {
+            int P;
+        } multibrot;
     } fractalArgs;
     double re_start, re_end, im_start, im_end;
     double colourMultiplier; // For changing the number of bands of colour for certain colour modes.

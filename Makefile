@@ -1,5 +1,5 @@
 CC 		?= gcc
-CFLAGS 	?= -Wall -Wextra -pedantic -std=c11 -g
+CFLAGS 	?= -Wall -Wextra -pedantic -std=c11 -g -pg
 TARGET = fractals
 SRCS = state.c colour_functions.c fractal_functions.c fractals.c 
 LIBS = -lm
