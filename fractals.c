@@ -1,9 +1,9 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <complex.h>
 #include <math.h>
-#include <time.h>
 #include <SDL2/SDL.h>
 
 #include "state.h"
@@ -12,13 +12,9 @@
 
 #define SDL_ASSERT(x) assert(x == 0);
 
-// For benchmarking
-#define BMRK
+static int drawCurrRectangle(state* state);
 
-// drawPixels iterates through all the pixels on the screen and draws them.
-static int drawPixels(SDL_Renderer* r, state* state);
-
-void initialiseSDL(SDL_Window** window, SDL_Renderer** renderer, state** state) {
+void initialiseSDL(SDL_Window** window, SDL_Renderer** renderer, SDL_Texture** texture, state** state) {
     // Initialises the SDL library.
     SDL_ASSERT(SDL_Init(SDL_INIT_EVERYTHING));
     
@@ -35,7 +31,11 @@ void initialiseSDL(SDL_Window** window, SDL_Renderer** renderer, state** state) 
     *renderer = SDL_CreateRenderer(*window, -1, 0); 
     assert(*renderer != NULL);
 
-    *state = initState(*window, *renderer);
+    *texture = SDL_CreateTexture(*renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STATIC, 1000, 1000);
+
+    uint32_t* pixels = malloc(1000 * 1000 * sizeof(uint32_t));
+
+    *state = initState(*window, *renderer, *texture, pixels);
     assert(*state != NULL);
 }
 
@@ -49,31 +49,23 @@ int main(void) {
     /*
      *  INITIALISE AND RUN SDL
      */
-    SDL_Window* window; SDL_Renderer* renderer; state* state;
-    initialiseSDL(&window, &renderer, &state);
+    SDL_Window* window; SDL_Renderer* renderer; SDL_Texture* texture; state* state;
+    initialiseSDL(&window, &renderer, &texture, &state);
     state->pixelGetter = setter;
     
     while (state->isRunning) {
         // If required update the screen.
         if (state->redrawRequired) {
-            // Clear the screen to the draw colour.
+            state->curr_pixel_size = state->max_pixel_size;
+            
             SDL_ASSERT(SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255));
             SDL_ASSERT(SDL_RenderClear(renderer));
-
-            // Draw fractal pixels.
-#ifdef BMRK
-            clock_t begin = clock();
-#endif
-            SDL_ASSERT(drawPixels(renderer, state));
-#ifdef BMRK
-            clock_t end = clock();
-            double time_spent = (double)(end - begin)/ CLOCKS_PER_SEC;
-            printf("Time spent to draw pixels: %lfs\n", time_spent);
-#endif
-
-            // Update the screen.
+            
+            // Clear the screen to the draw colour.
             SDL_RenderPresent(renderer);
         }
+        
+        SDL_ASSERT(drawCurrRectangle(state));
 
         handleEvents(state);
     }
@@ -81,15 +73,27 @@ int main(void) {
     return EXIT_SUCCESS;
 }
 
-int drawPixels(SDL_Renderer* r, state* state) {
-    int inc = state->highRes ? 1 : LOW_RES_SIZE;
-    for (int x = 0; x < state->windowWidth; x += inc) {
-        for (int y = 0; y < state->windowHeight; y += inc) {
-            // Set pixel.
-            int colour = state->pixelGetter(x, y, state);
-            int success = setPixel(x, y, colour, r, state);
-            if (success != 0) return -1;
+int drawCurrRectangle(state* state) {
+    if (state->curr_pixel_size == 0) {
+        return 0;
+    }
+    if (state->currX > state->windowWidth) {
+        state->currX = 0;
+        state->currY += state->curr_pixel_size;
+        if (state->currY > state->windowWidth) {
+            state->currY = 0;
+            state->curr_pixel_size /= 3;
+
+            // We draw what we have so far.
+            SDL_UpdateTexture(state->texture, NULL, state->pixels, sizeof(uint32_t) * state->windowWidth);
+            SDL_RenderClear(state->renderer);
+            SDL_RenderCopy(state->renderer, state->texture, NULL, NULL);
+            SDL_RenderPresent(state->renderer);
         }
     }
-    return 0;
+    int colour = state->pixelGetter(state->currX, state->currY, state);
+    int success = setPixel(state->currX, state->currY, colour, state);
+    state->currX += state->curr_pixel_size;
+    return success;
 }
+

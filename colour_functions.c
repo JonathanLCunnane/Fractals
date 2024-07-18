@@ -40,8 +40,8 @@ int linearInterpolate(int start, int end, double t) {
     );
 }
 
-int setPixel(int x, int y, int colour, SDL_Renderer* r, state* state) {
-    int setColour;
+int setPixel(int x, int y, int colour, state* state) {
+    /*int setColour;
     if (state->inverted) {
         setColour = SDL_SetRenderDrawColor(
             r, 
@@ -59,17 +59,28 @@ int setPixel(int x, int y, int colour, SDL_Renderer* r, state* state) {
             255
         );
     }
+    
     int drawPixel;
-    if (state->highRes) {
+    if (state->curr_pixel_size == 1) {
         drawPixel = SDL_RenderDrawPoint(r, x, y);
     } else {
-        SDL_Rect rect = {.x = x, .y = y, .w = LOW_RES_SIZE, .h = LOW_RES_SIZE};
+        SDL_Rect rect = {.x = x, .y = y, .w = state->curr_pixel_size, .h = state->curr_pixel_size};
         drawPixel = SDL_RenderFillRect(r, &rect);
     }
     if (setColour == 0 && drawPixel == 0) {
         return 0;
     }
-    return -1;
+    return -1;*/
+    if (state->inverted) {
+        colour = INVERTED_COLOUR(colour);
+    }
+    for (int xPixel = x; xPixel < x + state->curr_pixel_size && xPixel < state->windowWidth; xPixel++) {
+        for (int yPixel = y; yPixel < y + state->curr_pixel_size && yPixel < state->windowHeight; yPixel++) {
+            int pixelIDX = (xPixel + (yPixel * state->windowWidth));
+            state->pixels[pixelIDX] = colour;
+        }
+    }
+    return 0;
 }
 
 static fractalOut getResult(int x, int y, state* state) {
@@ -77,13 +88,14 @@ static fractalOut getResult(int x, int y, state* state) {
     double complex z = coord.x + (I * coord.y);
     switch (state->fractalType) {
         case TYPE_MANDELBROT:
-            return mandelbrot(z);
+            return mandelbrot(z, state->max_iters);
             break;
         case TYPE_JULIA:
             return julia(
                 state->fractalArgs.julia.P,
                 z,
-                state->fractalArgs.julia.c
+                state->fractalArgs.julia.c,
+                state->max_iters
             );
             break;
         default:
@@ -104,7 +116,7 @@ static int grayscaleGeneral(int x, int y, state* state, bool centreWhite) {
         }
                
     } else {
-        c = 255 * ((double) out.smoothIters / (double) MAX_ITERS);
+        c = 255 * ((double) out.smoothIters / (double) state->max_iters);
     }
     return COLOUR(c, c, c);
 }

@@ -29,6 +29,10 @@ struct state {
     } fractalArgs;
     double re_start, re_end, im_start, im_end;
     double colourMultiplier; // For changing the number of bands of colour for certain colour modes.
+    int max_pixel_size;
+    int curr_pixel_size;
+    int currX, currY;
+    int max_iters;
     int colourOffset; // For cycling the colours in the bands in certain modes.
     int windowWidth, windowHeight;
     uint8_t fractalType; /* See the top of this file for types */
@@ -36,12 +40,13 @@ struct state {
     bool isRunning;
     bool redrawRequired;
     bool inverted;
-    bool highRes;
     SDL_Window* window;
     SDL_Renderer* renderer;
+    SDL_Texture* texture;
+    uint32_t* pixels; // This pointer is to a uint8_t so we can access the individual R, G, and B components of each pixel.
 };
 
-extern state* initState();
+extern state* initState(SDL_Window*, SDL_Renderer*, SDL_Texture*, uint32_t*);
 extern vec2 getCoord(state*, int, int); // Takes the state and the pixel x and y coordinates on the window and returns the relating coordinate.
 extern void handleEvents(state*);
 extern void destroyState(state*);

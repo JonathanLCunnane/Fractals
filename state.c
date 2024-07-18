@@ -7,7 +7,7 @@
 
 #define MAX_WINDOW_TITLE_LENGTH 200
 
-state* initState(SDL_Window* w, SDL_Renderer* r) {
+state* initState(SDL_Window* w, SDL_Renderer* r, SDL_Texture* t, uint32_t* pixels) {
     state* state = malloc(sizeof(struct state));
     assert(state != NULL);
    
@@ -15,6 +15,10 @@ state* initState(SDL_Window* w, SDL_Renderer* r) {
     state->re_end = 2.0;
     state->im_start = -2.0;
     state->im_end = 2.0;
+    state->max_iters = 20;
+    state->max_pixel_size = 100;
+    state->curr_pixel_size = state->max_pixel_size;
+    state->currX = 0; state->currY = 0;
     SDL_GetWindowSize(w, &state->windowWidth, &state->windowHeight);
     state->pixelGetter = &grayscaleCentreBlack;
     state->fractalType = TYPE_MANDELBROT;
@@ -22,10 +26,11 @@ state* initState(SDL_Window* w, SDL_Renderer* r) {
     state->colourOffset = 0;
     state->redrawRequired = true;
     state->inverted = false;
-    state->highRes = false;
     state->isRunning = true;
     state->window = w;
     state->renderer = r;
+    state->texture = t;
+    state->pixels = pixels;
     return state;
 }
 
@@ -59,8 +64,8 @@ static void updateWindowText(state* state, vec2 mouseCoords) {
             break;
     }
     sprintf(
-        buf, "Fractals - Mode: %s - Cursor: %.5f + %.5fi",
-        mode, mouseCoords.x, mouseCoords.y
+        buf, "Fractals:: %d iterations : %s : %.5f + %.5fi",
+        state->max_iters, mode, mouseCoords.x, mouseCoords.y
     );
     SDL_SetWindowTitle(state->window, buf);
 }
@@ -83,6 +88,13 @@ void handleEvents(state* state) {
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     state->windowWidth = event.window.data1;
                     state->windowHeight = event.window.data2;
+                    // New texture and pixels required.
+                    state->texture = SDL_CreateTexture(
+                        state->renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STATIC,
+                        state->windowWidth, state->windowHeight
+                    );
+                    free(state->pixels);
+                    state->pixels = malloc(sizeof(uint32_t) * state->windowWidth * state->windowHeight); // The 3 is for the 3 components R, G, and B.
                     state->redrawRequired = true;
                     break;
                 default:
@@ -110,12 +122,10 @@ void handleEvents(state* state) {
                     nextPixelGetter = &blueBrownWhiteCentreBlack;
                     break;
                 /*
-                    zoomIn(state, mouseCoord, ZOOM_FACTOR);
                  * INVERT COLOURS
                  */
                 case SDLK_i:
                     state->redrawRequired = true;
-                    state->highRes = false;
                     state->inverted = !(state->inverted);
                     break;
                 /*
@@ -131,19 +141,16 @@ void handleEvents(state* state) {
                     state->colourOffset = 0;
                     state->redrawRequired = true;
                     state->inverted = false;
-                    state->highRes = false;
                     break;
                 /*
                  * CHANGE COLOUR BAND COUNT VIA MULTIPLIER
                  */
                 case SDLK_UP:
                     state->redrawRequired = true;
-                    state->highRes = false;
                     state->colourMultiplier *= COLOUR_ADJUST_MULTIPLIER;
                     break;
                 case SDLK_DOWN:
                     state->redrawRequired = true;
-                    state->highRes = false;
                     state->colourMultiplier /= COLOUR_ADJUST_MULTIPLIER;
                     break;
                 /*
@@ -151,22 +158,11 @@ void handleEvents(state* state) {
                  */
                 case SDLK_LEFT:
                     state->redrawRequired = true;
-                    state->highRes = false;
                     state->colourOffset--;
                     break;
                 case SDLK_RIGHT:
                     state->redrawRequired = true;
-                    state->highRes = false;
                     state->colourOffset++;
-                    break;
-                /*
-                 * CONFIRM SELECTION
-                 */
-                case SDLK_RETURN:
-                case SDLK_KP_ENTER:
-                    // Confirming selection, use highRes.
-                    if (!state->highRes) state->redrawRequired = true;
-                    state->highRes = true;
                     break;
                 default:
                     break;
@@ -174,7 +170,6 @@ void handleEvents(state* state) {
             if (prevPixelGetter != nextPixelGetter) {
                 // Appearance changes, so use lowRes.
                 state->redrawRequired = true;
-                state->highRes = false;
                 state->pixelGetter = nextPixelGetter;
             }
             break;
@@ -184,7 +179,6 @@ void handleEvents(state* state) {
         case SDL_MOUSEBUTTONDOWN:
             mouseCoords = getCoord(state, event.button.x, event.button.y);
             state->redrawRequired = true;
-            state->highRes = false;
             switch (event.button.button) {
                 case SDL_BUTTON_LEFT: // Zoom in
                     zoomIn(state, mouseCoords, ZOOM_FACTOR);
@@ -200,9 +194,15 @@ void handleEvents(state* state) {
                     break;
             }
             break;
-        case SDL_MOUSEMOTION:
+        case SDL_MOUSEMOTION: // Adjust window title.
             mouseCoords = getCoord(state, event.motion.x, event.motion.y);
             updateWindowText(state, mouseCoords);
+            break;
+        case SDL_MOUSEWHEEL: // Adjust iterations.
+            state->max_iters += 10 * event.wheel.y;
+            if (state->max_iters < 20) state->max_iters = 20;
+            updateWindowText(state, mouseCoords);
+            state->redrawRequired = true;
             break;
         default:
             break;

@@ -1,7 +1,6 @@
 #ifndef FRACTAL_FUNCTIONS_H
 #define FRACTAL_FUNCTIONS_H
 
-#define MAX_ITERS 50
 #define BAILOUT_RADIUS (1 << 16)
 
 typedef struct {
@@ -11,7 +10,7 @@ typedef struct {
     double smoothIters;
 } fractalOut;
 
-extern fractalOut mandelbrot(double complex);
-extern fractalOut julia(int, double complex, double complex);
+extern fractalOut mandelbrot(double complex, int);
+extern fractalOut julia(int, double complex, double complex, int);
 
 #endif

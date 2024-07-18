@@ -4,12 +4,11 @@
 #include <SDL2/SDL.h>
 #include "state.h"
 
-#define LOW_RES_SIZE 5
-
 #define RED_COMPONENT(x) ((x & (0xFF << 16)) >> 16)
 #define GREEN_COMPONENT(x) ((x & (0xFF << 8)) >> 8)
 #define BLUE_COMPONENT(x) (x & 0xFF)
-#define COLOUR(r, g, b) ((r << 16) | (g << 8) | b)
+#define COLOUR(r, g, b) (((r) << 16) | ((g) << 8) | (b))
+#define INVERTED_COLOUR(x) COLOUR(255 - RED_COMPONENT(x), 255 - GREEN_COMPONENT(x), 255 - BLUE_COMPONENT(x))
 
 #define COLOUR_ADJUST_MULTIPLIER 1.5
 
@@ -20,7 +19,7 @@ extern int linearInterpolate(int start, int end, double t);
 // setPixel takes the colour which we need to set the pixel
 // and the information in state to set the pixel correctly.
 // Returns -1 on failure, 0 on success.
-extern int setPixel(int x, int y, int colour, SDL_Renderer* r, state* state);
+extern int setPixel(int x, int y, int colour, state* state);
 
 // A pixelGetter takes in x and y values, the width and height of the window,
 // and gets the relevant pixel colour based on the iterations. It returns the colour to set the pixel.
