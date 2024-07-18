@@ -5,6 +5,8 @@
 #include "colour_functions.h"
 #include "state.h"
 
+#define MAX_WINDOW_TITLE_LENGTH 200
+
 state* initState(SDL_Window* w, SDL_Renderer* r) {
     state* state = malloc(sizeof(struct state));
     assert(state != NULL);
@@ -45,6 +47,24 @@ static void zoomIn(state* state, vec2 at, double factor) {
     state->im_end = at.y + (new_im_size / 2);
 }
 
+static void updateWindowText(state* state, vec2 mouseCoords) {
+    char buf[MAX_WINDOW_TITLE_LENGTH];
+    char* mode;
+    switch (state->fractalType) {
+        case TYPE_MANDELBROT:
+            mode = "Mandelbrot";
+            break;
+        case TYPE_JULIA:
+            mode = "Julia";
+            break;
+    }
+    sprintf(
+        buf, "Fractals - Mode: %s - Cursor: %.5f + %.5fi",
+        mode, mouseCoords.x, mouseCoords.y
+    );
+    SDL_SetWindowTitle(state->window, buf);
+}
+
 void handleEvents(state* state) {
     state->redrawRequired = false;
     state->isRunning = true;
@@ -52,7 +72,7 @@ void handleEvents(state* state) {
     SDL_PollEvent(&event);
     pixelGetter prevPixelGetter = state->pixelGetter;
     pixelGetter nextPixelGetter = prevPixelGetter;
-    vec2 mouseCoord;
+    vec2 mouseCoords;
     switch (event.type) {
         case SDL_QUIT:
             state->isRunning = false;
@@ -85,6 +105,9 @@ void handleEvents(state* state) {
                     break;
                 case SDLK_3:
                     nextPixelGetter = &rainbowColourCentreBlack;
+                    break;
+                case SDLK_4:
+                    nextPixelGetter = &blueBrownWhiteCentreBlack;
                     break;
                 /*
                     zoomIn(state, mouseCoord, ZOOM_FACTOR);
@@ -159,23 +182,27 @@ void handleEvents(state* state) {
          * MOUSE EVENT HANDLING.
          */
         case SDL_MOUSEBUTTONDOWN:
-            mouseCoord = getCoord(state, event.button.x, event.button.y);
+            mouseCoords = getCoord(state, event.button.x, event.button.y);
             state->redrawRequired = true;
             state->highRes = false;
-            printf("x, y = %f, %f\n", mouseCoord.x, mouseCoord.y);
             switch (event.button.button) {
                 case SDL_BUTTON_LEFT: // Zoom in
-                    zoomIn(state, mouseCoord, ZOOM_FACTOR);
+                    zoomIn(state, mouseCoords, ZOOM_FACTOR);
                     break;
                 case SDL_BUTTON_MIDDLE: // Switch to Julia at point
                     state->fractalType = TYPE_JULIA;
                     state->fractalArgs.julia.P = 2;
-                    state->fractalArgs.julia.c = mouseCoord.x + (mouseCoord.y * I);
+                    state->fractalArgs.julia.c = mouseCoords.x + (mouseCoords.y * I);
+                    updateWindowText(state, mouseCoords);
                     break;
                 case SDL_BUTTON_RIGHT: // Zoom out
-                    zoomIn(state, mouseCoord, 1 / ZOOM_FACTOR);
+                    zoomIn(state, mouseCoords, 1 / ZOOM_FACTOR);
                     break;
             }
+            break;
+        case SDL_MOUSEMOTION:
+            mouseCoords = getCoord(state, event.motion.x, event.motion.y);
+            updateWindowText(state, mouseCoords);
             break;
         default:
             break;

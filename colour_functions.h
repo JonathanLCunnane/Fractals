@@ -29,5 +29,6 @@ typedef int (*pixelGetter) (int x, int y, state* state);
 extern int grayscaleCentreBlack(int x, int y, state* state);
 extern int grayscaleCentreWhite(int x, int y, state* state);
 extern int rainbowColourCentreBlack(int x, int y, state* state);
+extern int blueBrownWhiteCentreBlack(int x, int y, state* state);
 
 #endif

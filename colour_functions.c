@@ -10,7 +10,26 @@ static int rainbowColours[] = {
     0x79c314, // Green
     0x487de7, // Blue
     0x4b369d, // Indigo
-    0x70369d, // Violet
+    0x70369d // Violet
+};
+
+static int blueBrownWhiteGradient[] = {
+    0x0d0033,
+    0x000043,
+    0x062869,
+    0x042596,
+    0x1e56a7,
+    0x2daac7,
+    0x89c8f5,
+    0xd6fbff,
+    0xded8ae,
+    0xffcb5a,
+    0xf5af17,
+    0xded8ac,
+    0x935600,
+    0x6f3608,
+    0x3d1e11,
+    0x1b081a
 };
 
 int linearInterpolate(int start, int end, double t) {
@@ -90,11 +109,15 @@ static int grayscaleGeneral(int x, int y, state* state, bool centreWhite) {
     return COLOUR(c, c, c);
 }
 
+static int modulo(int x, int N) { // Fixed for negative numbers, assumes N > 0.
+    return (x % N + N) % N;
+}
+
 static int getOutsideLerp(fractalOut out, state* state, int numColours, int* colours) {
     int smoothItersFloor = floor(out.smoothIters * state->colourMultiplier);
     int colourIDX = smoothItersFloor + state->colourOffset;
-    int startColour = colours[colourIDX % numColours];
-    int endColour = colours[(colourIDX + 1) % numColours];
+    int startColour = colours[modulo(colourIDX, numColours)];
+    int endColour = colours[modulo((colourIDX + 1), numColours)];
     return linearInterpolate(startColour, endColour, (out.smoothIters * state->colourMultiplier) - smoothItersFloor);
 }
 
@@ -126,4 +149,8 @@ int grayscaleCentreWhite(int x, int y, state* state) {
 
 int rainbowColourCentreBlack(int x, int y, state* state) {
     return outsideColourGeneral(x, y, state, false, 7, rainbowColours);
+}
+
+int blueBrownWhiteCentreBlack(int x, int y, state* state) {
+    return outsideColourGeneral(x, y, state, false, 16, blueBrownWhiteGradient);
 }
